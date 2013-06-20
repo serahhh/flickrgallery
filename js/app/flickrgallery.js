@@ -3,7 +3,7 @@ require(['jquery.blImageCenter']);
 
 define(function (require) {
     var $ = require('jquery'),
-        Handlebars = require('handlebars'),
+        Handlebars = require('Handlebars'),
         Utils = require('app/utils'),
         pluginName = "flickrGallery",
         defaults = {
