@@ -1,0 +1,15 @@
+<div class="navbar">
+	<div class="navbar-inner">
+		<form class="navbar-search pull-left form-inline">
+			<input type="text" data-flickr-role="search" class="search-query" placeholder="{{placeholder searchQuery 'Search'}}" value="{{searchQuery}}"/>
+			<span class="pull-right">
+				<label>Per page</label>
+				<select class="input-mini">
+					{{#per_page_options_each perPageOptions perPage}}
+						<option value="{{val}}" {{selected}}>{{val}}</option>
+					{{/per_page_options_each}}
+				</select>
+			</span>
+		</form>
+	</div>
+</div>

@@ -1,0 +1,56 @@
+body {
+	font-size: 16px;
+	line-height: 1.5;
+	margin: 2em 0 2em 0;
+	overflow: hidden;
+}
+.navbar-inner {
+	min-width: 365px;
+	padding: 0.75em 1.5em 0.75em 1.5em;
+}
+
+.form-inline {
+	width: 100%;
+}
+
+@media (max-width: 460px) {
+	body {
+		margin: 1em 0 1em 0;
+	}
+
+	.navbar-inner {
+		padding: 0.5em 1em 0.5em 1em;
+	}
+
+	.search-query {
+		width: 60%;
+	}
+
+	.navbar label {
+		display: none;
+	}
+}
+
+@media (max-width: 767px) {
+	.navbar-inner {
+		min-width: 0;
+	}
+
+	.pagination-large ul>li>a, .pagination-large ul>li>span{
+		font-size: 1em;
+		padding: 0.4em;
+	}
+}
+
+.thumbnail .caption {
+	font-size: 0.75em;
+	width: 95%;
+	padding-bottom: 0
+}
+
+.hideOverflow {
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    display:block;
+}

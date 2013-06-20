@@ -1,0 +1,13 @@
+{{#if photo.length}}
+    <div class="pagination pagination-large pagination-centered">
+        <p>{{total}} results</p>
+        <p>page {{currentPage}} of {{total_pages total perpage}}</p>
+        <ul>
+            {{#pagination total currentPage perPage maxPaginationLinks '»' '«'}}
+                {{> template_partials_pagElement}}
+            {{else}}
+                {{> template_partials_separator}}
+            {{/pagination}}
+        </ul>
+    </div>
+{{/if}}

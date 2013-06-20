@@ -1,0 +1,14 @@
+{{#unless rows.length}}
+	{{#if searchQuery}}
+		<div class="alert alert-block alert-large"><p class="lead">No results for <em>{{searchQuery}}</em>! :)</p></div>
+	{{else}}
+		<div class="alert alert-block alert-info"><p class="lead">Please search for images!</p></div>
+	{{/if}}
+{{/unless}}
+{{#each rows}}
+	<ul class="thumbnails">
+		{{#each this}}
+			{{> template_partials_image}}
+		{{/each}}
+	</ul>
+{{/each}}
