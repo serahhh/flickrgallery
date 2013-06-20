@@ -19,8 +19,9 @@ define(function (require) {
             perPage: 12,
             perRow: 4,
             perPageOptions: [4, 8, 12, 16],
-            maxPaginationLinks: 5,
-            maxPages: 10,
+            paginationLinksEdge: 2,
+            paginationLinksAdjacent: 1,
+            maxPages: 30,
             sort: "relevance"
         },
 
@@ -144,11 +145,13 @@ define(function (require) {
         },
 
         handlePagination: function (e) {
-            var target = e.target,
-                role = $(target).parents(['flickr-role']).data('flickr-role'),
-                pageNo = parseInt(target.innerText, 10);
+            var target = $(e.target).closest('[data-flickr-role=previous], [data-flickr-role=next], [data-flickr-role=page]'),
+                role = target.data('flickr-role'),
+                pageNo;
 
-            if (role) {
+            if (!target.is('.disabled')) {
+                pageNo = parseInt(e.target.innerText, 10);
+
                 switch (role) {
                 case "next":
                     this.nextPage();
@@ -156,11 +159,17 @@ define(function (require) {
                 case "previous":
                     this.previousPage();
                     break;
+                case "page":
+                    (function () {
+                        if (!isNaN(pageNo)) {
+                            this.goToPage(pageNo);
+                        }
+                    }.bind(this)());
+                    break;
                 }
-            } else if (!isNaN(pageNo)) {
-                this.goToPage(pageNo);
             }
 
+            e.stopPropagation();
             e.preventDefault();
         },
 
@@ -252,16 +261,25 @@ define(function (require) {
         },
 
         _getRenderData: function () {
+            var opts = this.options;
+
             return $.extend({}, this.photoData, {
-                basePictureURL: this.options.basePictureURL,
+                basePictureURL: opts.basePictureURL,
                 rows: this._getRows(),
-                perPage: this.options.perPage,
-                size: this.options.pictureSize,
-                perPageOptions: this.options.perPageOptions,
-                maxPaginationLinks: this.options.maxPaginationLinks,
+                size: opts.pictureSize,
+                perPageOptions: opts.perPageOptions,
+                maxPaginationLinks: opts.maxPaginationLinks,
                 currentPage: this.currentPage,
-                searchQuery: this.searchQuery
+                searchQuery: this.searchQuery,
+                totalPages: this._getTotalPages(),
+                maxPages: opts.maxPages,
+                paginationLinksEdge: opts.paginationLinksEdge,
+                paginationLinksAdjacent: opts.paginationLinksAdjacent
             });
+        },
+
+        _getTotalPages: function () {
+            return Math.ceil(this.photoData.total / this.options.perPage);
         }
     });
 
