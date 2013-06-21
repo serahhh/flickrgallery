@@ -5,10 +5,12 @@ define(function (require) {
     var $ = require('jquery'),
         Handlebars = require('Handlebars'),
         Utils = require('app/utils'),
+        appTemplate = require('hbs!template/app'),
         pluginName = "flickrGallery",
         defaults = {
-            baseURL: "http://api.flickr.com/services/rest/",
-            basePictureURL: "http://farm{farm}.staticflickr.com/{server}/{id}_{secret}_{size}.jpg",
+            apiURL: "http://api.flickr.com/services/rest/",
+            basePhotoURL: "http://farm{farm}.staticflickr.com/{server}/{id}_{secret}_{size}.jpg",
+            baseClickthroughURL: "http://www.flickr.com/photos/{owner}/{id}",
             baseParams: {
                 "method": "flickr.photos.search",
                 "api_key": "45a83a34e3417bb74aaa6f6acdbac679",
@@ -39,12 +41,6 @@ define(function (require) {
 
     $.extend(FlickrGallery.prototype, {
         init: function () {
-            console.log('flickr gallery init!');
-
-            this.templates = {
-                app: require('hbs!template/app')
-            };
-
             this.currentPage = 1;
 
             // do the search?
@@ -64,10 +60,10 @@ define(function (require) {
                 sort: this.options.sort
             }, params));
 
-            jQuery.ajax({
+            $.ajax({
                 type: "GET",
                 cache: true,
-                url: this.options.baseURL + paramString,
+                url: this.options.apiURL + paramString,
                 dataType: 'jsonp',
                 success: this.loadPhotosCallback.bind(this)
             });
@@ -75,16 +71,22 @@ define(function (require) {
 
         render: function () {
             this.$el.empty();
-            this.$el.append(this.templates.app(this._getRenderData()));
+            this.$el.append(appTemplate(this._getRenderData()));
             this.afterRender();
         },
 
         afterRender: function () {
-            if (this.photoData) {
-                this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').css('opacity', '0');
+            if (this.photoData && this.photoData.photo.length) {
+                this.hideGrid();
             }
 
+            this.loader = this.$el.find('[data-flickr-role=loader]');
+
+            this.showLoader();
+
             this.bindEvents();
+
+            this.scrollToTop();
         },
 
         bindEvents: function () {
@@ -138,10 +140,15 @@ define(function (require) {
             var target = e.target,
                 searchTerm = target.value;
 
-            if (e.keyCode === 13 && searchTerm) {
-                this.searchForTerm(searchTerm);
+            if (e.keyCode === 13) {
+                if (searchTerm) {
+                    this.searchForTerm(searchTerm);
+                }
+
                 e.preventDefault();
             }
+
+            e.stopPropagation();
         },
 
         handlePagination: function (e) {
@@ -188,7 +195,7 @@ define(function (require) {
                 windowWidth = $(window).width();
 
 
-            if (windowWidth > 768) {
+            if (windowWidth >= 768) {
                 newWidth = newHeight = width;
             } else {
                 newWidth = newHeight = windowWidth / 2;
@@ -200,15 +207,26 @@ define(function (require) {
             });
 
             gridImages.centerImage();
+        },
 
+        showGrid: function () {
             this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').animate({
                 opacity: 1
             }, 200);
         },
 
+        scrollToTop: function () {
+            $('html, body').animate({
+                scrollTop: '0px'
+            }, 800);
+        },
+
+        hideGrid: function () {
+            this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').css('opacity', '0');
+        },
+
         loadPhotosCallback: function (data) {
             if (data && data.stat === "ok") {
-                console.log(data);
                 this.photoData = data.photos;
                 this.render();
             } else {
@@ -216,14 +234,30 @@ define(function (require) {
             }
         },
 
+        showLoader: function () {
+            if (this.loader) {
+                this.loader.removeClass('hide');
+            }
+        },
+
+        hideLoader: function () {
+            if (this.loader) {
+                this.loader.addClass('hide');
+            }
+        },
+
         _getImgLoadFn: function () {
             var loadedImages = 0,
-                totalImages = this.$el.find('.thumbnail img').length;
+                totalImages = this.$el.find('.thumbnail img').length,
+                TIME_OUT = 10000,
+                startTime = new Date().getTime();
 
             return function () {
                 loadedImages++;
-                if (loadedImages === totalImages) {
+                if (loadedImages === totalImages || new Date().getTime() - TIME_OUT > startTime) {
                     this.fixGrid();
+                    this.hideLoader();
+                    this.showGrid();
                 }
             }.bind(this);
         },
@@ -232,6 +266,7 @@ define(function (require) {
             var perRow = this.options.perRow,
                 perPage = this.options.perPage,
                 photos,
+                photo,
                 rows = [],
                 i = 0,
                 j,
@@ -242,8 +277,11 @@ define(function (require) {
                     photos = this.photoData.photo.slice(i, i + perRow);
 
                     for (j = 0, len = photos.length; j < len; j++) {
-                        photos[j].flickrURL = this._getFlickrURL(photos[j]);
+                        photo = photos[j];
+                        photo.src = this._getPhotoSrcURL(photo);
+                        photo.clickthroughURL = this._getClickthroughURL(photo);
                     }
+
                     rows.push(photos);
 
                     perPage -= perRow;
@@ -254,8 +292,15 @@ define(function (require) {
             return rows;
         },
 
-        _getFlickrURL: function (photo) {
-            return this.options.basePictureURL.supplant($.extend(photo, {
+        _getClickthroughURL: function (photo) {
+            return this.options.baseClickthroughURL.supplant($.extend(photo, {
+                id: photo.id,
+                owner: photo.owner
+            }));
+        },
+
+        _getPhotoSrcURL: function (photo) {
+            return this.options.basePhotoURL.supplant($.extend(photo, {
                 size: this.options.pictureSize
             }));
         },
@@ -264,12 +309,10 @@ define(function (require) {
             var opts = this.options;
 
             return $.extend({}, this.photoData, {
-                basePictureURL: opts.basePictureURL,
                 rows: this._getRows(),
-                size: opts.pictureSize,
                 perPageOptions: opts.perPageOptions,
-                maxPaginationLinks: opts.maxPaginationLinks,
                 currentPage: this.currentPage,
+                perPage: opts.perPage,
                 searchQuery: this.searchQuery,
                 totalPages: this._getTotalPages(),
                 maxPages: opts.maxPages,

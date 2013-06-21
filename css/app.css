@@ -12,7 +12,77 @@ body {
 	width: 100%;
 }
 
-@media (max-width: 460px) {
+.pagination {
+	margin: 0;
+}
+
+.pagination-footer {
+	font-size: 0.8em;
+	text-align:center;
+	margin-top: 1em;
+}
+
+.thumbnail:hover, .thumbnail:active {
+	background-color: #fafafa;
+}
+
+.thumbnail a:hover {
+	text-decoration: none
+}
+
+.spinner {
+    top: 8em;
+    position: absolute;
+    width: 100%;
+}
+
+.container {
+	position: relative;
+}
+
+.spinner > img {
+    margin: 0 auto;
+    display: block;
+}
+
+.thumbnail .caption {
+	font-size: 0.75em;
+	width: 95%;
+	padding-bottom: 0;
+}
+
+.hideOverflow {
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    display:block;
+}
+
+@media (max-width: 767px) {
+	.navbar-inner {
+		min-width: 0;
+	}
+
+	.thumbnail .img-wrapper {
+		margin-top: 1em;
+		margin: 0 auto;
+		-moz-box-shadow: 5px 5px 15px #888;
+		-webkit-box-shadow: 5px 5px 15px #888;
+		box-shadow: 5px 5px 15px #888;
+	}
+
+	.thumbnail {
+		padding-top: 1.5em;
+	}
+
+	.thumbnail .caption {
+		text-align: center;
+		font-size: 1.5em;
+		line-height: 1.5em;
+	}
+}
+
+@media (max-width: 480px) {
 	body {
 		margin: 1em 0 1em 0;
 	}
@@ -28,28 +98,9 @@ body {
 	.navbar label {
 		display: none;
 	}
-}
-
-@media (max-width: 767px) {
-	.navbar-inner {
-		min-width: 0;
-	}
 
 	.pagination-large ul>li>a, .pagination-large ul>li>span{
 		font-size: 1em;
 		padding: 0.4em;
 	}
-}
-
-.thumbnail .caption {
-	font-size: 0.75em;
-	width: 95%;
-	padding-bottom: 0
-}
-
-.hideOverflow {
-    overflow:hidden;
-    white-space:nowrap;
-    text-overflow:ellipsis;
-    display:block;
 }

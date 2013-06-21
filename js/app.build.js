@@ -1,6 +1,6 @@
 ({
     baseUrl: "./vendor",
-    dir: "../../www",
+    dir: "../../build",
     mainConfigFile: './app.js',
 
     optimizeCss: "standard",
