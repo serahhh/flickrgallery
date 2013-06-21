@@ -78,11 +78,9 @@ define(function (require) {
         afterRender: function () {
             if (this.photoData && this.photoData.photo.length) {
                 this.hideGrid();
+                this.loader = this.$el.find('[data-flickr-role=loader]');
+                this.showLoader();
             }
-
-            this.loader = this.$el.find('[data-flickr-role=loader]');
-
-            this.showLoader();
 
             this.bindEvents();
 
@@ -96,6 +94,9 @@ define(function (require) {
 
             navEl.on('change', 'select', this.perPageChangeFn.bind(this));
             navEl.on('keypress', '[data-flickr-role=search]', this.searchInputKeydownFn.bind(this));
+            navEl.on('focus', '[data-flickr-role=search]', this.searchInputFocusFn.bind(this));
+            navEl.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
+
             paginationEl.on('click', this.handlePagination.bind(this));
             gridEl.find('.thumbnail img').load(this._getImgLoadFn());
 
@@ -104,6 +105,14 @@ define(function (require) {
 
 
         /* UI actions */
+
+        searchInputFocusFn: function (e) {
+            e.target.value = "";
+        },
+
+        searchInputBlurFn: function (e) {
+            e.target.value = this.searchQuery || "";
+        },
 
         searchForTerm: function (term) {
             this.currentPage = 1;
