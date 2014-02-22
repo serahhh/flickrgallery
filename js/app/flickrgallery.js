@@ -1,12 +1,20 @@
 /*globals jQuery, $ */
-require(['jquery.blImageCenter', 'Handlebars']);
+define([
+    'jquery',
+    'app/utils',
+    'hbs!template/app',
+    'hbs!template/imageGrid',
+    'jquery.blImageCenter',
+    'jqueryui'
+], function (
+    $,
+    Utils,
+    appTemplate,
+    gridTemplate
+) {
+    'use strict';
 
-define(function (require) {
-    var $ = require('jquery'),
-        Utils = require('app/utils'),
-        appTemplate = require('hbs!template/app'),
-        imageGridTemplate = require('hbs!template/imageGrid'),
-        pluginName = 'flickrGallery',
+    var pluginName = 'flickrGallery',
         defaults = {
             apiURL: 'http://api.flickr.com/services/rest/',
             basePhotoURL: 'http://farm{farm}.staticflickr.com/{server}/{id}_{secret}_{size}.jpg',
@@ -85,8 +93,9 @@ define(function (require) {
         },
 
         renderPhotos: function (photoData) {
+            this.ui.grid.removeClass('visible');
             this.ui.grid.empty();
-            this.ui.grid.append(imageGridTemplate($.extend({}, photoData, {
+            this.ui.grid.append(gridTemplate($.extend({}, photoData, {
                 rows: this._getRows(photoData),
                 searchQuery: this.searchQuery
             })));
@@ -107,10 +116,15 @@ define(function (require) {
 
             this.ui.pagination.on('click', this.handlePagination.bind(this));
             this.ui.grid.find('.thumbnail img').load(this._getImgLoadFn());
+
             this.ui.grid.on('gridLoaded', function () {
                 this.fixGrid();
                 this.showGrid();
-                window.setTimeout(this.hideLoader.bind(this), 0);
+
+                window.setTimeout(function () {
+                    this.hideLoader();
+                }.bind(this), 500);
+
             }.bind(this));
 
             $(window).resize(Utils.debouncer(this.fixGrid.bind(this)));
@@ -230,8 +244,8 @@ define(function (require) {
             // this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').animate({
             //     opacity: 1
             // }, 200);
-            
-            this.ui.grid.addClass('visible');
+
+            this.ui.grid.addClass('visible', 2000);
         },
 
         scrollToTop: function () {
@@ -348,4 +362,6 @@ define(function (require) {
             }
         });
     };
+
+    return FlickrGallery;
 });
