@@ -1,35 +1,36 @@
 /*globals jQuery, $ */
-require(['jquery.blImageCenter']);
+require(['jquery.blImageCenter', 'Handlebars']);
 
 define(function (require) {
     var $ = require('jquery'),
-        Handlebars = require('Handlebars'),
         Utils = require('app/utils'),
         appTemplate = require('hbs!template/app'),
-        pluginName = "flickrGallery",
+        imageGridTemplate = require('hbs!template/imageGrid'),
+        pluginName = 'flickrGallery',
         defaults = {
-            apiURL: "http://api.flickr.com/services/rest/",
-            basePhotoURL: "http://farm{farm}.staticflickr.com/{server}/{id}_{secret}_{size}.jpg",
-            baseClickthroughURL: "http://www.flickr.com/photos/{owner}/{id}",
+            apiURL: 'http://api.flickr.com/services/rest/',
+            basePhotoURL: 'http://farm{farm}.staticflickr.com/{server}/{id}_{secret}_{size}.jpg',
+            baseClickthroughURL: 'http://www.flickr.com/photos/{owner}/{id}',
             baseParams: {
-                "method": "flickr.photos.search",
-                "api_key": "45a83a34e3417bb74aaa6f6acdbac679",
-                "format": "json",
-                "jsoncallback": "?",
+                'method': 'flickr.photos.search',
+                'api_key': '45a83a34e3417bb74aaa6f6acdbac679',
+                'format': 'json',
+                'jsoncallback': '?',
             },
-            pictureSize: "m",
+            pictureSize: 'm',
             perPage: 12,
             perRow: 4,
             perPageOptions: [4, 8, 12, 16],
             paginationLinksEdge: 2,
             paginationLinksAdjacent: 1,
             maxPages: 30,
-            sort: "relevance"
+            sort: 'relevance'
         },
 
         FlickrGallery = function (element, options) {
             this.element = element;
             this.$el = $(element);
+            this.$ = this.$el.find.bind(this.$el);
 
             this.options = $.extend({}, defaults, options);
 
@@ -43,14 +44,20 @@ define(function (require) {
         init: function () {
             this.currentPage = 1;
 
-            // do the search?
-
             if (this.options.initialSearchQuery) {
                 this.searchQuery = this.options.initialSearchQuery;
                 this.search();
-            } else {
-                this.render();
             }
+
+            this.renderAppView();
+            this.showLoader();
+
+            this.ui = {
+                pagination: this.$('[data-flickr-role=pagination]'),
+                nav: this.$('[data-flickr-role=nav]'),
+                grid: this.$('[data-flickr-role=grid]'),
+                loader: this.$('[data-flickr-role=loader]')
+            };
         },
 
         search: function (params) {
@@ -61,7 +68,7 @@ define(function (require) {
             }, params));
 
             $.ajax({
-                type: "GET",
+                type: 'GET',
                 cache: true,
                 url: this.options.apiURL + paramString,
                 dataType: 'jsonp',
@@ -69,36 +76,42 @@ define(function (require) {
             });
         },
 
-        render: function () {
+        renderAppView: function () {
             this.$el.empty();
-            this.$el.append(appTemplate(this._getRenderData()));
-            this.afterRender();
+            this.$el.append(appTemplate({
+                perPageOptions: this.options.perPageOptions,
+                searchQuery: this.searchQuery
+            }));
         },
 
-        afterRender: function () {
-            if (this.photoData && this.photoData.photo.length) {
-                this.hideGrid();
-                this.loader = this.$el.find('[data-flickr-role=loader]');
-                this.showLoader();
-            }
+        renderPhotos: function (photoData) {
+            this.ui.grid.empty();
+            this.ui.grid.append(imageGridTemplate($.extend({}, photoData, {
+                rows: this._getRows(photoData),
+                searchQuery: this.searchQuery
+            })));
 
+            this.afterPhotoRender();
+        },
+
+        afterPhotoRender: function () {
             this.bindEvents();
-
             this.scrollToTop();
         },
 
         bindEvents: function () {
-            var paginationEl = this.$el.find('[data-flickr-role=pagination]'),
-                navEl = this.$el.find('[data-flickr-role=nav]'),
-                gridEl = this.$el.find('[data-flickr-role=grid]');
+            this.ui.nav.on('change', 'select', this.perPageChangeFn.bind(this));
+            this.ui.nav.on('keypress', '[data-flickr-role=search]', this.searchInputKeydownFn.bind(this));
+            this.ui.nav.on('focus', '[data-flickr-role=search]', this.searchInputFocusFn.bind(this));
+            this.ui.nav.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
 
-            navEl.on('change', 'select', this.perPageChangeFn.bind(this));
-            navEl.on('keypress', '[data-flickr-role=search]', this.searchInputKeydownFn.bind(this));
-            navEl.on('focus', '[data-flickr-role=search]', this.searchInputFocusFn.bind(this));
-            navEl.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
-
-            paginationEl.on('click', this.handlePagination.bind(this));
-            gridEl.find('.thumbnail img').load(this._getImgLoadFn());
+            this.ui.pagination.on('click', this.handlePagination.bind(this));
+            this.ui.grid.find('.thumbnail img').load(this._getImgLoadFn());
+            this.ui.grid.on('gridLoaded', function () {
+                this.fixGrid();
+                this.showGrid();
+                window.setTimeout(this.hideLoader.bind(this), 0);
+            }.bind(this));
 
             $(window).resize(Utils.debouncer(this.fixGrid.bind(this)));
         },
@@ -107,11 +120,11 @@ define(function (require) {
         /* UI actions */
 
         searchInputFocusFn: function (e) {
-            e.target.value = "";
+            e.target.value = '';
         },
 
         searchInputBlurFn: function (e) {
-            e.target.value = this.searchQuery || "";
+            e.target.value = this.searchQuery || '';
         },
 
         searchForTerm: function (term) {
@@ -138,11 +151,7 @@ define(function (require) {
         changePerPage: function (val) {
             this.options.perPage = val;
 
-            if (this.photoData.photo.length < val) {
-                this.search();
-            } else {
-                this.render();
-            }
+            this.search();
         },
 
         searchInputKeydownFn: function (e) {
@@ -169,13 +178,13 @@ define(function (require) {
                 pageNo = parseInt(e.target.innerText, 10);
 
                 switch (role) {
-                case "next":
+                case 'next':
                     this.nextPage();
                     break;
-                case "previous":
+                case 'previous':
                     this.previousPage();
                     break;
-                case "page":
+                case 'page':
                     (function () {
                         if (!isNaN(pageNo)) {
                             this.goToPage(pageNo);
@@ -196,9 +205,8 @@ define(function (require) {
 
         /* some kind of hackery */
         fixGrid: function () {
-            var gridEl = this.$el.find('[data-flickr-role=grid]'),
-                gridImages = gridEl.find('.thumbnail img'),
-                width = gridEl.find('.thumbnail').first().width(),
+            var gridImages = this.ui.grid.find('.thumbnail img'),
+                width = this.ui.grid.find('.thumbnail').first().width(),
                 newWidth,
                 newHeight,
                 windowWidth = $(window).width();
@@ -219,9 +227,11 @@ define(function (require) {
         },
 
         showGrid: function () {
-            this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').animate({
-                opacity: 1
-            }, 200);
+            // this.$el.find('[data-flickr-role=grid], [data-flickr-role=pagination]').animate({
+            //     opacity: 1
+            // }, 200);
+            
+            this.ui.grid.addClass('visible');
         },
 
         scrollToTop: function () {
@@ -235,9 +245,8 @@ define(function (require) {
         },
 
         loadPhotosCallback: function (data) {
-            if (data && data.stat === "ok") {
-                this.photoData = data.photos;
-                this.render();
+            if (data && data.stat === 'ok' && data.photos) {
+                this.renderPhotos(data.photos);
             } else {
                 console.log('Error loading photos.');
             }
@@ -250,28 +259,24 @@ define(function (require) {
         },
 
         hideLoader: function () {
-            if (this.loader) {
-                this.loader.addClass('hide');
-            }
+            this.ui.loader.addClass('hide');
         },
 
         _getImgLoadFn: function () {
             var loadedImages = 0,
-                totalImages = this.$el.find('.thumbnail img').length,
+                totalImages = this.$('.thumbnail img').length,
                 TIME_OUT = 10000,
                 startTime = new Date().getTime();
 
             return function () {
                 loadedImages++;
                 if (loadedImages === totalImages || new Date().getTime() - TIME_OUT > startTime) {
-                    this.fixGrid();
-                    this.hideLoader();
-                    this.showGrid();
+                    this.ui.grid.trigger('gridLoaded');
                 }
             }.bind(this);
         },
 
-        _getRows: function () {
+        _getRows: function (photoData) {
             var perRow = this.options.perRow,
                 perPage = this.options.perPage,
                 photos,
@@ -281,9 +286,9 @@ define(function (require) {
                 j,
                 len;
 
-            if (this.photoData && this.photoData.photo.length) {
+            if (photoData) {
                 while (perPage) {
-                    photos = this.photoData.photo.slice(i, i + perRow);
+                    photos = photoData.photo.slice(i, i + perRow);
 
                     for (j = 0, len = photos.length; j < len; j++) {
                         photo = photos[j];
