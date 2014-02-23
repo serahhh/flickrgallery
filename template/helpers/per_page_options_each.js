@@ -1,6 +1,6 @@
 define('template/helpers/per_page_options_each', ['Handlebars'], function (Handlebars) {
     var per_page_options_each = function (perPageOptions, currentValue, options) {
-        var buffer = "",
+        var buffer = '',
             i,
             len,
             val;
@@ -10,7 +10,7 @@ define('template/helpers/per_page_options_each', ['Handlebars'], function (Handl
 
             buffer += options.fn({
                 val: val,
-                selected: val === currentValue ? "selected" : ""
+                selected: val === currentValue ? 'selected' : ''
             });
         }
 

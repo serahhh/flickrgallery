@@ -66,6 +66,17 @@ define([
                 grid: this.$('[data-flickr-role=grid]'),
                 loader: this.$('[data-flickr-role=loader]')
             };
+
+            this.ui.nav.on('change', 'select', this.perPageChangeFn.bind(this));
+            this.ui.nav.on('keypress', '[data-flickr-role=search]', this.searchInputKeydownFn.bind(this));
+            this.ui.nav.on('focus', '[data-flickr-role=search]', this.searchInputFocusFn.bind(this));
+            this.ui.nav.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
+            this.ui.pagination.on('click', this.handlePagination.bind(this));
+
+            if (this.options.initialSearchQuery) {
+                this.searchQuery = this.options.initialSearchQuery;
+                this.search();
+            }
         },
 
         search: function (params) {
@@ -82,18 +93,20 @@ define([
                 dataType: 'jsonp',
                 success: this.loadPhotosCallback.bind(this)
             });
+
+            this.ui.grid.removeClass('visible');
         },
 
         renderAppView: function () {
             this.$el.empty();
             this.$el.append(appTemplate({
                 perPageOptions: this.options.perPageOptions,
+                perPage: this.options.perPage,
                 searchQuery: this.searchQuery
             }));
         },
 
         renderPhotos: function (photoData) {
-            this.ui.grid.removeClass('visible');
             this.ui.grid.empty();
             this.ui.grid.append(gridTemplate($.extend({}, photoData, {
                 rows: this._getRows(photoData),
@@ -109,12 +122,6 @@ define([
         },
 
         bindEvents: function () {
-            this.ui.nav.on('change', 'select', this.perPageChangeFn.bind(this));
-            this.ui.nav.on('keypress', '[data-flickr-role=search]', this.searchInputKeydownFn.bind(this));
-            this.ui.nav.on('focus', '[data-flickr-role=search]', this.searchInputFocusFn.bind(this));
-            this.ui.nav.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
-
-            this.ui.pagination.on('click', this.handlePagination.bind(this));
             this.ui.grid.find('.thumbnail img').load(this._getImgLoadFn());
 
             this.ui.grid.on('gridLoaded', function () {
@@ -331,22 +338,6 @@ define([
             return this.options.basePhotoURL.supplant($.extend(photo, {
                 size: this.options.pictureSize
             }));
-        },
-
-        _getRenderData: function () {
-            var opts = this.options;
-
-            return $.extend({}, this.photoData, {
-                rows: this._getRows(),
-                perPageOptions: opts.perPageOptions,
-                currentPage: this.currentPage,
-                perPage: opts.perPage,
-                searchQuery: this.searchQuery,
-                totalPages: this._getTotalPages(),
-                maxPages: opts.maxPages,
-                paginationLinksEdge: opts.paginationLinksEdge,
-                paginationLinksAdjacent: opts.paginationLinksAdjacent
-            });
         },
 
         _getTotalPages: function () {
