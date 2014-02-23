@@ -32,7 +32,8 @@ define([
             paginationLinksEdge: 2,
             paginationLinksAdjacent: 1,
             maxPages: 30,
-            sort: 'relevance'
+            sort: 'relevance',
+            initialSearchQuery: ''
         },
 
         FlickrGallery = function (element, options) {
@@ -51,6 +52,7 @@ define([
     $.extend(FlickrGallery.prototype, {
         init: function () {
             this.currentPage = 1;
+            this.searchQuery = this.options.initialSearchQuery;
 
             this.renderAppView();
 
@@ -67,8 +69,7 @@ define([
             this.ui.nav.on('blur', '[data-flickr-role=search]', this.searchInputBlurFn.bind(this));
             this.ui.pagination.on('click', this.handlePagination.bind(this));
 
-            if (this.options.initialSearchQuery) {
-                this.searchQuery = this.options.initialSearchQuery;
+            if (this.searchQuery) {
                 this.search();
             }
         },
@@ -76,7 +77,7 @@ define([
         search: function (params) {
             var paramString = Utils.createParamString($.extend({}, this.options.baseParams, {
                 per_page: this.options.perPage,
-                text: window.encodeURIComponent(this.searchQuery || this.options.initialSearchQuery),
+                text: window.encodeURIComponent(this.searchQuery),
                 sort: this.options.sort
             }, params));
 
