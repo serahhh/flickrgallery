@@ -53,7 +53,6 @@ define([
             this.currentPage = 1;
 
             this.renderAppView();
-            this.showLoader();
 
             this.ui = {
                 pagination: this.$('[data-flickr-role=pagination]'),
@@ -80,6 +79,8 @@ define([
                 text: window.encodeURIComponent(this.searchQuery || this.options.initialSearchQuery),
                 sort: this.options.sort
             }, params));
+
+            this.showLoader();
 
             $.ajax({
                 type: 'GET',
@@ -269,9 +270,7 @@ define([
         },
 
         showLoader: function () {
-            if (this.loader) {
-                this.loader.removeClass('hide');
-            }
+            this.ui.loader.removeClass('hide');
         },
 
         hideLoader: function () {
