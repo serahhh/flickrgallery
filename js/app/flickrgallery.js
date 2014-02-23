@@ -52,11 +52,6 @@ define([
         init: function () {
             this.currentPage = 1;
 
-            if (this.options.initialSearchQuery) {
-                this.searchQuery = this.options.initialSearchQuery;
-                this.search();
-            }
-
             this.renderAppView();
             this.showLoader();
 
