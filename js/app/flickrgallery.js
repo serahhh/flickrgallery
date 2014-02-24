@@ -107,8 +107,14 @@ define([
                 dataType: 'jsonp',
                 success: this.loadPhotosCallback.bind(this)
             });
+        },
 
-            this.ui.grid.removeClass('visible');
+        clearGrid: function () {
+            this.ui.grid.empty();
+        },
+
+        clearPagination: function () {
+            this.ui.pagination.empty();
         },
 
         renderAppView: function () {
