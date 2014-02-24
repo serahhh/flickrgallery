@@ -4,13 +4,15 @@ define([
     'app/utils',
     'hbs!template/app',
     'hbs!template/imageGrid',
+    'hbs!template/pagination',
     'jquery.blImageCenter',
     'jqueryui'
 ], function (
     $,
     Utils,
     appTemplate,
-    gridTemplate
+    gridTemplate,
+    paginationTemplate
 ) {
     'use strict';
 
