@@ -55,6 +55,7 @@ define([
         init: function () {
             this.currentPage = 1;
             this.searchQuery = this.options.initialSearchQuery;
+            this.cache = {};
 
             this.renderAppView();
 
@@ -76,14 +77,28 @@ define([
             }
         },
 
-        search: function (params) {
+        search: function () {
+            var rows = this._getRows();
+
+            this.showLoader();
+            this.clearGrid();
+            this.clearPagination();
+
+            if (rows.length) {
+                this.renderGrid(rows);
+            } else {
+                this._search();
+            }
+
+            this.ui.grid.removeClass('visible');
+        },
+
+        _search: function (params) {
             var paramString = Utils.createParamString($.extend({}, this.options.baseParams, {
                 per_page: this.options.perPage,
                 text: window.encodeURIComponent(this.searchQuery),
                 sort: this.options.sort
             }, params));
-
-            this.showLoader();
 
             $.ajax({
                 type: 'GET',
@@ -105,14 +120,30 @@ define([
             }));
         },
 
-        renderPhotos: function (photoData) {
-            this.ui.grid.empty();
-            this.ui.grid.append(gridTemplate($.extend({}, photoData, {
-                rows: this._getRows(photoData),
+        renderGrid: function (rows) {
+            this.ui.grid.append(gridTemplate({
+                rows: rows || this._getRows(),
                 searchQuery: this.searchQuery
-            })));
+            }));
 
             this.afterPhotoRender();
+        },
+
+        renderPagination: function (photoData) {
+            this.ui.pagination.append(paginationTemplate($.extend({}, this._getPaginationData(photoData))));
+        },
+
+        _getPaginationData: function (photoData) {
+            var opts = this.options;
+
+            return {
+                currentPage: this.currentPage,
+                perPage: opts.perPage,
+                totalPages: this._getTotalPages(photoData),
+                maxPages: opts.maxPages,
+                paginationLinksEdge: opts.paginationLinksEdge,
+                paginationLinksAdjacent: opts.paginationLinksAdjacent
+            };
         },
 
         afterPhotoRender: function () {
@@ -265,8 +296,34 @@ define([
         },
 
         loadPhotosCallback: function (data) {
+            var cacheEntry,
+                startIndex,
+                endIndex;
+
             if (data && data.stat === 'ok' && data.photos) {
-                this.renderPhotos(data.photos);
+
+                cacheEntry = this.cache[this.searchQuery];
+
+                startIndex = (this.currentPage - 1) * this.options.perPage / this.options.perRow;
+                endIndex = startIndex + this.options.perPage / this.options.perRow;
+
+                if (cacheEntry && cacheEntry.rows.length) {
+                    cacheEntry.rows.splice(endIndex, 0, this._makeRows(data.photos.photo)[0]);
+                    data.photos.rows = cacheEntry.rows;
+                    console.log(cacheEntry.rows);
+                } else {
+                    data.photos.rows = this._makeRows(data.photos.photo);
+                }
+
+                delete data.photos.photo;
+
+                this.cache[this.searchQuery] = data.photos;
+
+                this.renderGrid();
+
+                // if (data.photos.photo.length) {
+                //     this.renderPagination(data.photos);
+                // }
             } else {
                 console.log('Error loading photos.');
             }
@@ -294,31 +351,48 @@ define([
             }.bind(this);
         },
 
-        _getRows: function (photoData) {
-            var perRow = this.options.perRow,
-                perPage = this.options.perPage,
-                photos,
+        _makeRows: function (photos) {
+            var rows = [],
+                perRow,
+                perPage,
+                row,
                 photo,
-                rows = [],
-                i = 0,
+                i,
                 j,
                 len;
 
-            if (photoData) {
-                while (perPage) {
-                    photos = photoData.photo.slice(i, i + perRow);
+            if (photos) {
+                perRow = this.options.perRow;
+                perPage = this.options.perPage;
+                i = 0;
 
-                    for (j = 0, len = photos.length; j < len; j++) {
-                        photo = photos[j];
+                while (perPage) {
+                    row = photos.slice(i, i + perRow);
+
+                    for (j = 0, len = row.length; j < len; j++) {
+                        photo = row[j];
                         photo.src = this._getPhotoSrcURL(photo);
                         photo.clickthroughURL = this._getClickthroughURL(photo);
                     }
 
-                    rows.push(photos);
+                    rows.push(row);
 
                     perPage -= perRow;
                     i += perRow;
                 }
+            }
+
+            return rows;
+        },
+
+        _getRows: function () {
+            var cacheEntry = this.cache[this.searchQuery],
+                rows = [],
+                startIndex = (this.currentPage - 1) * this.options.perPage / this.options.perRow,
+                endIndex = startIndex + this.options.perPage / this.options.perRow;
+
+            if (cacheEntry && this.options.perPage / this.options.perRow * this.currentPage <= cacheEntry.rows.length) {
+                rows = cacheEntry.rows.slice(startIndex, endIndex);
             }
 
             return rows;
@@ -337,8 +411,8 @@ define([
             }));
         },
 
-        _getTotalPages: function () {
-            return Math.ceil(this.photoData.total / this.options.perPage);
+        _getTotalPages: function (photoData) {
+            return Math.ceil(window.parseInt(photoData.total, 10) / photoData.perpage);
         }
     });
 
