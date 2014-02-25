@@ -206,6 +206,7 @@ define([
         },
 
         changePerPage: function (val) {
+            this.currentPage = 1;
             this.options.perPage = val;
 
             this.search();
